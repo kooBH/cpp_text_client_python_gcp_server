@@ -17,28 +17,6 @@ from google.cloud.speech import types
 
 import json
 
-from konlpy.tag import Okt
-okt = Okt()
-import numpy
-from functools import reduce
-
-from konlpy.tag import Komoran
-#komoran = Komoran(userdic='/tmp/dic.txt')
-from konlpy.tag import Kkma
-kkma = Kkma()
-
-test=[u'초기화를 위한 테스트 문구입니다.']
-
-# global #
-names = []
-menus = []
-unknown=''
-
-menuintent = [('변경', 'NNG'),('바꿔주', 'VV'),('이동', 'NNG'),('바꾸', 'VV'),('띄우', 'VV'),('듣', 'VV'),('열', 'VV'),('보여주','VV'),('보이','VV'),('보여','NNG')]
-callintent = [('불르', 'VV'),('있', 'VV'),('어디', 'NP'),('어딨', 'VA')]
-
-
-
 #########################################################
 
 # [START speech_transcribe_sync]
@@ -145,71 +123,6 @@ def init():
 
 
     print('NOTE::Python Module initialized')
-
-
-### Chatbot Engine 
-
-
-def analyze_intent(line):
-    global unknown
-    pos = kkma.pos(line)
-    #print(pos)
-    noun = kkma.nouns(line)
-    call = False
-    number = []
-    #posdict = dict(pos)
-    for intent in callintent:
-        call = call or intent in pos
-    menu = False
-    for intent in menuintent:
-        menu = menu or intent in pos
-    if call:
-        name_included_boolean = numpy.array(list(map(lambda x : line.startswith(x), names)))#find names from start
-        if(len(noun)!=0):
-            a = max(noun, key=len)
-            name_included_boolean = name_included_boolean | numpy.array(list(map(lambda x : x in a, names))) #check names included in noun
-
-        name_included_index = (numpy.where(name_included_boolean)[0])
-        if len(name_included_index) == 0:
-            return 100
-        else:
-            return int(100+name_included_index[0])
-
-    elif menu:
-        menu_included_boolean = list(map(lambda x : sum([x in n for n in noun])!=0 , menus))
-        #print(menu_included_boolean)
-        menu_included_index = (numpy.where(menu_included_boolean)[0])
-        if len(menu_included_index) == 0:
-            return 200
-        else:
-            return int(200+menu_included_index[0])
-    else:
-        print("???? ::" + str(line))
-        unknown = line
-        return -1
-
-# In[71]:
-
-def get_unknown():
-    global unknown
-    return unknown
-
-def menunumberExtract(pos):
-    for keyword, type in pos:
-        if type == 'MDN' or type == 'MDT':
-            number.append(keyword)
-    if len(number):
-        return number[0]
-    else :                    
-        return -1
-
-
-def get_intent(file_path):
-    ret_str = transcribe_file(file_path)
-    #print("PYTHON::ret_str : "  + str(ret_str))
-    intent = analyze_intent(ret_str)
-    #print("PYTHON::ret_str " + str(intent))
-    return intent
 
 ########################################################
 
