@@ -1,5 +1,11 @@
 #-*- coding:utf-8 -*-
 
+debug = True
+
+import time
+import datetime
+import io
+
 import os,sys
 
 from flask import Flask, redirect, url_for, request,send_file
@@ -9,6 +15,7 @@ from google.cloud.speech import enums
 from google.cloud.speech import types
 
 
+import json
 
 from konlpy.tag import Okt
 okt = Okt()
@@ -27,26 +34,17 @@ names = []
 menus = []
 unknown=''
 
-########################################################
-
-app = Flask(__name__)
-
-@app.route('/synth',methods=['POST'])
-def synth_call():
-    print('synth call')
-    text = request.form['text']
-
-if __name__ == '__main__':
-   #app.run(debug = True)
-   # 모든 ip (외부 ip) 에서 접근 가능하도록 설정.
-   app.run(host='0.0.0.0',port = 1170)
+menuintent = [('변경', 'NNG'),('바꿔주', 'VV'),('이동', 'NNG'),('바꾸', 'VV'),('띄우', 'VV'),('듣', 'VV'),('열', 'VV'),('보여주','VV'),('보이','VV'),('보여','NNG')]
+callintent = [('불르', 'VV'),('있', 'VV'),('어디', 'NP'),('어딨', 'VA')]
 
 
-#############################################   
+
+#########################################################
 
 # [START speech_transcribe_sync]
 
 def transcribe_file(speech_file):
+    print(speech_file)
     """Transcribe the given audio file."""
     client = speech.SpeechClient()
     now = datetime.datetime.now()
@@ -58,6 +56,7 @@ def transcribe_file(speech_file):
         #print(os.path.isfile(speech_file) )
         if(debug):
             print('Python::opening file ' + speech_file)
+
         with io.open(speech_file, 'rb') as audio_file:
             content = audio_file.read()
         audio = types.RecognitionAudio(content=content)
@@ -124,7 +123,8 @@ def transcribe_file(speech_file):
 def init():
     global menus
     global names
-    key_path = os.getcwd() + "KEY/key.json"
+    print(os.getcwd())
+    key_path = os.getcwd() + "/KEY/key.json"
     key_path = os.path.normpath(key_path)
 #    input_path = os.getcwd() + "/output.wav"
     #input_path = os.getcwd() + file_name
@@ -134,13 +134,11 @@ def init():
     #     'speech_folder', help='Full path of audio file folder to be recognized')
     # args = parser.parse_args()
     # transcribe_file(args.speech_folder)
-#    os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/bonhyeok/git/IIP_DEMO/KEY/key.json"
-#    transcribe_file('/home/bonhyeok/git/IIP_DEMO/build/output.wav')
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"]=key_path
     #print(input_path)
     kkma.pos(test[0])
 
-    with open("/config/inst.json") as json_file:
+    with open("config/inst.json") as json_file:
         json_data = json.load(json_file)
         names = json_data["name"]
         menus = json_data["menu"]
@@ -212,3 +210,35 @@ def get_intent(file_path):
     intent = analyze_intent(ret_str)
     #print("PYTHON::ret_str " + str(intent))
     return intent
+
+########################################################
+
+app = Flask(__name__)
+
+@app.route('/speech',methods=['POST'])
+def synth_call():
+    print('speech call')
+    file_path = request.form['path']
+    #return get_intent(file_path)
+    return transcribe_file(file_path)
+
+@app.route('/text',methods=['GET'])
+def text_call():
+    print('text call')
+    return unknown
+
+@app.route('/')
+def touch():
+    print('touch')
+    return 'hello from flask'
+
+
+if __name__ == '__main__':
+   init()
+   #app.run(debug = True)
+   # 모든 ip (외부 ip) 에서 접근 가능하도록 설정.
+   #app.run(host='0.0.0.0',port = 1170)
+   app.run(port = 1170)
+
+
+
